@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <meta name="description" content="Diário de Obra da L Engenharia">
+  <title>Diário de Obra | L Engenharia</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar no-print">
+      <div class="brand-wrap">
+        <div class="brand-mark">L</div>
+        <div>
+          <strong>L Engenharia</strong>
+          <span>Diário de Obra</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span id="modeBadge" class="badge badge-warn hidden">Modo demonstração</span>
+        <button id="installBtn" class="btn ghost hidden" type="button">Instalar app</button>
+        <button id="logoutBtn" class="btn ghost hidden" type="button">Sair</button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section id="authView" class="auth-card view">
+        <div class="auth-copy">
+          <span class="eyebrow">L ENGENHARIA</span>
+          <h1>Acompanhe a obra, dia após dia.</h1>
+          <p>Registre serviços, anexe fotos, compartilhe com o cliente e gere o relatório final da obra.</p>
+          <div id="demoNotice" class="notice hidden">
+            <strong>Modo demonstração ativo.</strong>
+            <span>O aplicativo já funciona neste navegador. Para compartilhar dados entre celulares, configure o Firebase.</span>
+          </div>
+        </div>
+        <div class="auth-panel">
+          <div id="authTabs" class="segmented">
+            <button class="seg active" data-auth="login" type="button">Entrar</button>
+            <button class="seg" data-auth="register" type="button">Criar conta</button>
+          </div>
+          <form id="authForm">
+            <label>E-mail<input id="authEmail" type="email" autocomplete="email" required placeholder="seuemail@exemplo.com"></label>
+            <label>Senha<input id="authPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="Mínimo 6 caracteres"></label>
+            <button id="authSubmit" class="btn primary wide" type="submit">Entrar</button>
+          </form>
+          <button id="demoEnterBtn" class="btn secondary wide hidden" type="button">Entrar na demonstração</button>
+          <p id="authMessage" class="form-message" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section id="dashboardView" class="view hidden">
+        <div class="page-head">
+          <div>
+            <span class="eyebrow">PAINEL DA EQUIPE</span>
+            <h1>Obras</h1>
+            <p id="welcomeText">Escolha uma obra ou toque no + para cadastrar outra.</p>
+          </div>
+          <button id="newProjectBtn" class="btn primary" type="button">+ Adicionar obra</button>
+        </div>
+        <div class="dashboard-summary" aria-label="Resumo das obras">
+          <div><span>Obras cadastradas</span><strong id="projectCount">0</strong></div>
+          <div><span>Em andamento</span><strong id="activeProjectCount">0</strong></div>
+          <div><span>Concluídas</span><strong id="doneProjectCount">0</strong></div>
+        </div>
+        <div id="projectList" class="project-grid"></div>
+        <div id="emptyProjects" class="empty hidden">
+          <div class="empty-icon">🏗️</div>
+          <h3>Nenhuma obra por aqui</h3>
+          <p>Crie a primeira obra para começar o diário.</p>
+        </div>
+      </section>
+
+      <section id="projectView" class="view hidden">
+        <div class="project-top no-print">
+          <button id="backBtn" class="btn ghost" type="button">← Obras</button>
+          <div class="project-top-actions">
+            <button id="demoClientToggle" class="btn ghost hidden" type="button">Ver como cliente</button>
+            <button id="deleteProjectBtn" class="btn danger hidden" type="button">Excluir obra</button>
+          </div>
+        </div>
+
+        <div class="project-hero">
+          <div>
+            <span id="projectRole" class="eyebrow">OBRA</span>
+            <h1 id="projectTitle">—</h1>
+            <p id="projectMeta">—</p>
+          </div>
+          <div class="progress-box">
+            <div class="progress-label"><span>Andamento</span><strong id="projectProgress">0%</strong></div>
+            <div class="progress-track"><span id="projectProgressBar"></span></div>
+          </div>
+        </div>
+
+        <nav class="tabs no-print" aria-label="Seções da obra">
+          <button class="tab active" data-tab="timeline" type="button">Diário</button>
+          <button class="tab admin-only" data-tab="new-entry" type="button">+ Atualização</button>
+          <button class="tab" data-tab="report" type="button">Relatório final</button>
+          <button class="tab admin-only" data-tab="settings" type="button">Dados da obra</button>
+        </nav>
+
+        <section id="timelineTab" class="tab-view">
+          <div id="timelineList" class="timeline"></div>
+          <div id="emptyTimeline" class="empty hidden">
+            <div class="empty-icon">📋</div>
+            <h3>Ainda não há registros</h3>
+            <p>Adicione a primeira atualização da obra.</p>
+          </div>
+        </section>
+
+        <section id="newEntryTab" class="tab-view hidden admin-only">
+          <div class="section-head">
+            <div><h2>Nova atualização</h2><p>Digite os serviços executados e use o botão + para adicionar outros.</p></div>
+          </div>
+          <form id="entryForm" class="card form-card">
+            <div class="form-grid two">
+              <label>Data<input id="entryDate" type="date" required></label>
+              <label>Andamento da obra
+                <div class="range-row"><input id="entryProgress" type="range" min="0" max="100" value="0"><output id="entryProgressValue">0%</output></div>
+              </label>
+            </div>
+
+            <div class="services-block">
+              <div class="label-title">Serviços executados</div>
+              <div id="serviceRows" class="service-rows"></div>
+              <button id="addServiceBtn" class="add-service" type="button"><span>+</span> Adicionar outro serviço</button>
+            </div>
+
+            <label>Observação do dia <small>(opcional)</small><textarea id="entryNotes" rows="3" maxlength="700" placeholder="Ex.: Serviço concluído conforme previsto. Amanhã iniciaremos a pintura."></textarea></label>
+
+            <div class="photo-upload-block">
+              <div class="label-title">Fotos do dia <small>(até 20 fotos)</small></div>
+              <label class="photo-picker" for="entryPhotos">
+                <span class="photo-picker-icon">＋</span>
+                <span><strong>Adicionar fotos</strong><small>Você pode selecionar várias de uma vez ou adicionar em etapas.</small></span>
+              </label>
+              <input id="entryPhotos" class="file-hidden" type="file" accept="image/*" multiple>
+              <div id="photoSelectionInfo" class="photo-selection-info">Nenhuma foto selecionada.</div>
+              <div id="photoPreview" class="photo-grid"></div>
+            </div>
+
+            <p id="entryMessage" class="form-message" aria-live="polite"></p>
+            <button id="publishEntryBtn" class="btn primary" type="submit">Publicar atualização</button>
+          </form>
+        </section>
+
+        <section id="reportTab" class="tab-view hidden">
+          <div class="report-actions no-print">
+            <div><h2>Relatório final da obra</h2><p>O relatório é montado automaticamente com os registros e fotos publicados.</p></div>
+            <button id="printReportBtn" class="btn primary" type="button">Gerar / salvar em PDF</button>
+          </div>
+
+          <div class="card conclusion-card admin-only no-print">
+            <label>Conclusão da obra<textarea id="projectConclusion" rows="4" maxlength="1500" placeholder="Ex.: Os serviços previstos foram executados conforme escopo contratado, sendo a obra concluída e entregue ao cliente."></textarea></label>
+            <button id="saveConclusionBtn" class="btn secondary" type="button">Salvar conclusão</button>
+          </div>
+
+          <article id="printableReport" class="report-sheet">
+            <div class="report-cover">
+              <div class="report-brand"><div class="brand-mark print-brand">L</div><strong>L ENGENHARIA</strong></div>
+              <div class="cover-title">
+                <span>RELATÓRIO FINAL</span>
+                <h1>Relatório de Acompanhamento e Registro Fotográfico da Obra</h1>
+                <h2 id="reportProjectName">—</h2>
+              </div>
+              <div class="cover-meta">
+                <div><span>Cliente</span><strong id="reportClient">—</strong></div>
+                <div><span>Local</span><strong id="reportAddress">—</strong></div>
+                <div><span>Período</span><strong id="reportPeriod">—</strong></div>
+              </div>
+            </div>
+
+            <section class="report-section">
+              <h2>1. Dados da obra</h2>
+              <div class="report-data-grid">
+                <div><span>Obra</span><strong id="rProject">—</strong></div>
+                <div><span>Cliente</span><strong id="rClient">—</strong></div>
+                <div><span>Endereço</span><strong id="rAddress">—</strong></div>
+                <div><span>Responsável técnico</span><strong id="rEngineer">—</strong></div>
+                <div><span>CREA</span><strong id="rCrea">—</strong></div>
+                <div><span>Andamento final</span><strong id="rProgress">—</strong></div>
+              </div>
+            </section>
+
+            <section class="report-section">
+              <h2>2. Resumo da execução</h2>
+              <div class="summary-grid">
+                <div><span>Dias registrados</span><strong id="rDays">0</strong></div>
+                <div><span>Serviços</span><strong id="rServices">0</strong></div>
+                <div><span>Fotos</span><strong id="rPhotos">0</strong></div>
+              </div>
+            </section>
+
+            <section class="report-section">
+              <h2>3. Diário de execução da obra</h2>
+              <div id="reportEntries"></div>
+            </section>
+
+            <section class="report-section">
+              <h2>4. Conclusão</h2>
+              <p id="rConclusion">A conclusão da obra será inserida antes da emissão final.</p>
+            </section>
+
+            <section class="report-signature">
+              <div class="signature-line"></div>
+              <strong id="rEngineerSign">—</strong>
+              <span id="rCreaSign">—</span>
+              <span>L Engenharia</span>
+              <em>Você sonha, a L Engenharia realiza.</em>
+            </section>
+          </article>
+        </section>
+
+        <section id="settingsTab" class="tab-view hidden admin-only">
+          <div class="section-head"><div><h2>Dados da obra</h2><p>Essas informações aparecem para o cliente e no relatório final.</p></div></div>
+          <form id="settingsForm" class="card form-card">
+            <div class="form-grid two">
+              <label>Nome da obra<input id="settingsName" required maxlength="120"></label>
+              <label>Cliente<input id="settingsClient" required maxlength="120"></label>
+              <label>E-mail do cliente<input id="settingsClientEmail" type="email" placeholder="cliente@email.com"></label>
+              <label>Endereço / local<input id="settingsAddress" maxlength="180"></label>
+              <label>Responsável técnico<input id="settingsEngineer" maxlength="120"></label>
+              <label>CREA<input id="settingsCrea" maxlength="50"></label>
+              <label>Data de início<input id="settingsStartDate" type="date"></label>
+              <label>Status
+                <select id="settingsStatus"><option>Em andamento</option><option>Concluída</option><option>Pausada</option></select>
+              </label>
+            </div>
+            <p id="settingsMessage" class="form-message" aria-live="polite"></p>
+            <button class="btn primary" type="submit">Salvar dados</button>
+          </form>
+        </section>
+      </section>
+    </main>
+
+    <dialog id="projectDialog" class="modal">
+      <form id="projectForm" method="dialog" class="modal-card">
+        <div class="modal-head"><div><span class="eyebrow">NOVA OBRA</span><h2>Criar diário de obra</h2></div><button id="closeProjectDialog" class="icon-btn" type="button" aria-label="Fechar">×</button></div>
+        <div class="form-grid two">
+          <label>Nome da obra<input id="projectNameInput" required maxlength="120" placeholder="Ex.: Reforma Apto 82"></label>
+          <label>Cliente<input id="projectClientInput" required maxlength="120" placeholder="Nome do cliente"></label>
+          <label>E-mail do cliente<input id="projectClientEmailInput" type="email" placeholder="cliente@email.com"></label>
+          <label>Endereço / local<input id="projectAddressInput" maxlength="180" placeholder="Ex.: Osasco/SP"></label>
+          <label>Responsável técnico<input id="projectEngineerInput" value="Luiz Gustavo Tavares da Costa" maxlength="120"></label>
+          <label>CREA<input id="projectCreaInput" value="5070215494" maxlength="50"></label>
+          <label>Data de início<input id="projectStartInput" type="date"></label>
+        </div>
+        <p class="helper"><strong>Acesso do cliente:</strong> informe o e-mail que ele usará para entrar. A equipe poderá cadastrar quantas obras precisar pelo botão <strong>+</strong> do painel.</p>
+        <p id="projectMessage" class="form-message" aria-live="polite"></p>
+        <div class="modal-actions"><button id="cancelProjectBtn" class="btn ghost" type="button">Cancelar</button><button class="btn primary" type="submit">Criar obra</button></div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

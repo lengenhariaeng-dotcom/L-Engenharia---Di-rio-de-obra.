@@ -1,0 +1,28 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function project(projectId) {
+      return firestore.get(/databases/(default)/documents/projects/$(projectId));
+    }
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function canRead(projectId) {
+      return signedIn() && (
+        project(projectId).data.ownerUid == request.auth.uid ||
+        (request.auth.token.email != null && project(projectId).data.clientEmail == request.auth.token.email)
+      );
+    }
+
+    function canWrite(projectId) {
+      return signedIn() && project(projectId).data.ownerUid == request.auth.uid;
+    }
+
+    match /projects/{projectId}/{allPaths=**} {
+      allow read: if canRead(projectId);
+      allow write: if canWrite(projectId) && request.resource.size < 12 * 1024 * 1024;
+    }
+  }
+}
