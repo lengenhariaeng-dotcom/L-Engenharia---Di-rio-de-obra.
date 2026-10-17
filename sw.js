@@ -1,4 +1,4 @@
-const CACHE = 'leng-diario-v3-cloudinary';
+const CACHE = 'leng-diario-v4-admin-only';
 const LOCAL_ASSETS = [
   './',
   './index.html',
@@ -27,10 +27,10 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
+    fetch(event.request).then((response) => {
       const copy = response.clone();
       caches.open(CACHE).then((cache) => cache.put(event.request, copy));
       return response;
-    }).catch(() => caches.match('./index.html')))
+    }).catch(() => caches.match(event.request).then((cached) => cached || caches.match('./index.html')))
   );
 });

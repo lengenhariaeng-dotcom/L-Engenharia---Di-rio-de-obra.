@@ -5,29 +5,38 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAdmin() {
+      return signedIn() &&
+             request.auth.token.email != null &&
+             request.auth.token.email == 'lengenharia.eng@gmail.com';
+    }
+
     function project(projectId) {
       return get(/databases/$(database)/documents/projects/$(projectId));
     }
 
-    function isOwner(projectId) {
-      return signedIn() && project(projectId).data.ownerUid == request.auth.uid;
-    }
-
     function isClient(projectId) {
-      return signedIn() && request.auth.token.email != null &&
+      return signedIn() &&
+             request.auth.token.email != null &&
              project(projectId).data.clientEmail == request.auth.token.email;
     }
 
     match /projects/{projectId} {
-      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
-      allow read: if signedIn() &&
-        (resource.data.ownerUid == request.auth.uid ||
-         (request.auth.token.email != null && resource.data.clientEmail == request.auth.token.email));
-      allow update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      // Somente a conta administrativa da L Engenharia cria obras.
+      allow create: if isAdmin() &&
+                    request.resource.data.ownerUid == request.auth.uid;
+
+      // Administrador vê todas as próprias obras; cliente vê somente a obra vinculada ao seu e-mail.
+      allow read: if isAdmin() ||
+        (signedIn() && request.auth.token.email != null &&
+         resource.data.clientEmail == request.auth.token.email);
+
+      // Somente a L Engenharia altera ou exclui obras.
+      allow update, delete: if isAdmin();
 
       match /entries/{entryId} {
-        allow read: if isOwner(projectId) || isClient(projectId);
-        allow create, update, delete: if isOwner(projectId);
+        allow read: if isAdmin() || isClient(projectId);
+        allow create, update, delete: if isAdmin();
       }
     }
   }

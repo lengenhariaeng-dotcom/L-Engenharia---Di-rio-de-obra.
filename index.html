@@ -40,15 +40,16 @@
           </div>
         </div>
         <div class="auth-panel">
-          <div id="authTabs" class="segmented">
+          <div id="authTabs" class="segmented single">
             <button class="seg active" data-auth="login" type="button">Entrar</button>
-            <button class="seg" data-auth="register" type="button">Criar conta</button>
           </div>
           <form id="authForm">
             <label>E-mail<input id="authEmail" type="email" autocomplete="email" required placeholder="seuemail@exemplo.com"></label>
             <label>Senha<input id="authPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="Mínimo 6 caracteres"></label>
             <button id="authSubmit" class="btn primary wide" type="submit">Entrar</button>
           </form>
+          <button id="forgotPasswordBtn" class="auth-link" type="button">Esqueci minha senha</button>
+          <p class="auth-help">Acesso restrito a contas cadastradas pela L Engenharia.</p>
           <button id="demoEnterBtn" class="btn secondary wide hidden" type="button">Entrar na demonstração</button>
           <p id="authMessage" class="form-message" aria-live="polite"></p>
         </div>

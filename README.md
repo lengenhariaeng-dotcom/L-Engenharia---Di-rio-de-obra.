@@ -49,3 +49,15 @@ Ao criar uma obra, informe o e-mail do cliente. O cliente cria a própria conta 
 O preset do Cloudinary é `Unsigned`, porque o site é estático no GitHub Pages. Não coloque `API Secret` em nenhum arquivo do GitHub.
 
 Para reduzir uso indevido do preset, mantenha no Cloudinary limites de formato/tamanho compatíveis com fotos e acompanhe o consumo do plano gratuito.
+
+
+## Controle de acesso — versão administrada
+
+Conta administradora configurada: `lengenharia.eng@gmail.com`.
+
+- somente a conta administradora pode criar, editar ou excluir obras e registros;
+- clientes entram somente para visualizar as obras vinculadas ao e-mail deles;
+- o botão público **Criar conta** foi removido;
+- crie contas de clientes no Firebase Console em **Authentication > Usuários > Adicionar usuário**;
+- no Firebase Authentication, desative a criação de contas por usuários em **Configurações > Ações do usuário**;
+- publique também as regras atualizadas do arquivo `firestore.rules`.

@@ -4,6 +4,7 @@ const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const state = { user: null, projects: [], project: null, entries: [], demoClientView: false, pendingPhotos: [], deferredPrompt: null };
 const DEMO_KEY = 'leng_diario_demo_v1';
+const ADMIN_EMAIL = 'lengenharia.eng@gmail.com';
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const uid = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const fmtDate = (iso) => iso ? new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`)) : '—';
@@ -57,15 +58,17 @@ class FirebaseBackend {
     const map=new Map(); owned.forEach(d=>map.set(d.id,{id:d.id,...d.data()})); shared.forEach(d=>map.set(d.id,{id:d.id,...d.data()}));
     return [...map.values()].sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
   }
-  async createProject(data){ const ref=await this.api.addDoc(this.api.collection(this.api.db,'projects'),{...data,ownerUid:state.user.uid,ownerEmail:state.user.email,createdAt:this.api.serverTimestamp()}); return {id:ref.id,...data,ownerUid:state.user.uid,ownerEmail:state.user.email}; }
-  async updateProject(id,data){ await this.api.updateDoc(this.api.doc(this.api.db,'projects',id),data); return {...state.project,...data}; }
+  async createProject(data){ if((state.user?.email||'').toLowerCase()!==ADMIN_EMAIL) throw new Error('Apenas a L Engenharia pode cadastrar obras.'); const ref=await this.api.addDoc(this.api.collection(this.api.db,'projects'),{...data,ownerUid:state.user.uid,ownerEmail:state.user.email,createdAt:this.api.serverTimestamp()}); return {id:ref.id,...data,ownerUid:state.user.uid,ownerEmail:state.user.email}; }
+  async updateProject(id,data){ if((state.user?.email||'').toLowerCase()!==ADMIN_EMAIL) throw new Error('Acesso somente leitura.'); await this.api.updateDoc(this.api.doc(this.api.db,'projects',id),data); return {...state.project,...data}; }
   async deleteProject(id){
+    if((state.user?.email||'').toLowerCase()!==ADMIN_EMAIL) throw new Error('Acesso somente leitura.');
     const snaps=await this.api.getDocs(this.api.collection(this.api.db,'projects',id,'entries'));
     await Promise.all(snaps.docs.map(d=>this.api.deleteDoc(d.ref)));
     await this.api.deleteDoc(this.api.doc(this.api.db,'projects',id));
   }
   async listEntries(projectId){ const q=this.api.query(this.api.collection(this.api.db,'projects',projectId,'entries'),this.api.orderBy('date','asc')); const s=await this.api.getDocs(q); return s.docs.map(d=>({id:d.id,...d.data()})); }
   async addEntry(projectId,data,photoFiles){
+    if((state.user?.email||'').toLowerCase()!==ADMIN_EMAIL) throw new Error('Acesso somente leitura.');
     if(photoFiles.length && !isCloudinaryConfigured) throw new Error('Cloudinary não configurado para envio de fotos.');
     const photos=[];
     for(let i=0;i<photoFiles.length;i++){
@@ -78,18 +81,18 @@ class FirebaseBackend {
     );
     return {id:entryRef.id,...data,photos};
   }
-  async deleteEntry(projectId,entryId){ await this.api.deleteDoc(this.api.doc(this.api.db,'projects',projectId,'entries',entryId)); }
+  async deleteEntry(projectId,entryId){ if((state.user?.email||'').toLowerCase()!==ADMIN_EMAIL) throw new Error('Acesso somente leitura.'); await this.api.deleteDoc(this.api.doc(this.api.db,'projects',projectId,'entries',entryId)); }
 }
 
 async function initFirebase(){
   if(!isFirebaseConfigured){ backend=new DemoBackend(); $('#modeBadge').classList.remove('hidden'); $('#demoNotice').classList.remove('hidden'); $('#demoEnterBtn').classList.remove('hidden'); $('#authForm').classList.add('hidden'); return; }
-  const [{initializeApp},{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut},{getFirestore,collection,query,where,getDocs,addDoc,updateDoc,deleteDoc,doc,orderBy,serverTimestamp}] = await Promise.all([
+  const [{initializeApp},{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut},{getFirestore,collection,query,where,getDocs,addDoc,updateDoc,deleteDoc,doc,orderBy,serverTimestamp}] = await Promise.all([
     import('https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js'),
     import('https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js'),
     import('https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js')
   ]);
   const app=initializeApp(firebaseConfig); const auth=getAuth(app); const db=getFirestore(app);
-  firebase={auth,db,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,collection,query,where,getDocs,addDoc,updateDoc,deleteDoc,doc,orderBy,serverTimestamp};
+  firebase={auth,db,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut,collection,query,where,getDocs,addDoc,updateDoc,deleteDoc,doc,orderBy,serverTimestamp};
   backend=new FirebaseBackend(firebase);
   onAuthStateChanged(auth, async (user)=>{ if(user){state.user=user;await openDashboard();}else{state.user=null;showView('authView');$('#logoutBtn').classList.add('hidden');} });
 }
@@ -100,23 +103,25 @@ function setTab(name){
   $$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
   if(name==='report') renderReport();
 }
-function isOwner(){ return state.project && state.project.ownerUid===state.user?.uid && !state.demoClientView; }
+function isAdminUser(){ return !isFirebaseConfigured || (state.user?.email||'').toLowerCase()===ADMIN_EMAIL; }
+function isOwner(){ return state.project && isAdminUser() && state.project.ownerUid===state.user?.uid && !state.demoClientView; }
 function applyRole(){ const owner=isOwner(); $$('.admin-only').forEach(el=>el.classList.toggle('hidden',!owner)); $('#deleteProjectBtn').classList.toggle('hidden',!owner); $('#projectRole').textContent=owner?'GESTÃO DA OBRA':'ACOMPANHAMENTO DO CLIENTE'; }
 
 async function openDashboard(){
   showView('dashboardView'); $('#logoutBtn').classList.remove('hidden');
   state.projects=await backend.listProjects(); renderProjects();
-  $('#welcomeText').textContent=isFirebaseConfigured?`Olá, ${state.user.email}.`:'Modo demonstração: os dados ficam apenas neste navegador.';
+  $('#welcomeText').textContent=isFirebaseConfigured?(isAdminUser()?`Olá, ${state.user.email}.`:`Olá. Acompanhe abaixo as obras vinculadas a ${state.user.email}.`):'Modo demonstração: os dados ficam apenas neste navegador.';
 }
 function renderProjects(){
   const list=$('#projectList'); list.innerHTML='';
   const ownedProjects=state.projects.filter(p=>p.ownerUid===state.user.uid);
-  const canCreate=!isFirebaseConfigured || ownedProjects.length>0 || state.projects.length===0;
+  const canCreate=isAdminUser();
   $('#newProjectBtn').classList.toggle('hidden',!canCreate);
   $('#projectCount').textContent=state.projects.length;
   $('#activeProjectCount').textContent=state.projects.filter(p=>(p.status||'Em andamento')==='Em andamento').length;
   $('#doneProjectCount').textContent=state.projects.filter(p=>p.status==='Concluída').length;
-  $('#emptyProjects').classList.toggle('hidden',state.projects.length>0 || canCreate);
+  $('#emptyProjects').classList.toggle('hidden',state.projects.length>0);
+  if(state.projects.length===0 && !canCreate){ $('#emptyProjects').innerHTML='<strong>Nenhuma obra vinculada a este e-mail.</strong><span>Entre em contato com a L Engenharia para solicitar acesso.</span>'; }
 
   if(canCreate){
     const add=document.createElement('button'); add.type='button'; add.className='project-add-card';
@@ -125,7 +130,7 @@ function renderProjects(){
   }
 
   state.projects.forEach(p=>{
-    const owned=p.ownerUid===state.user.uid; const progress=p.lastProgress||0;
+    const owned=isAdminUser() && p.ownerUid===state.user.uid; const progress=p.lastProgress||0;
     const status=p.status||'Em andamento';
     const card=document.createElement('article'); card.className='project-card';
     card.innerHTML=`<div class="project-card-top"><span class="role">${owned?'GESTÃO':'CLIENTE'}</span><span class="project-status">${escapeHtml(status)}</span></div><h3>${escapeHtml(p.name)}</h3><p><strong>Cliente:</strong> ${escapeHtml(p.client||'Não informado')}</p><p>${escapeHtml(p.address||'Local não informado')}</p><div class="card-bottom"><div class="card-progress"><span>Andamento</span><strong>${progress}%</strong></div><div class="progress-track"><span style="width:${Math.max(0,Math.min(100,progress))}%"></span></div><div class="project-card-actions">${owned?'<button class="btn primary quick-entry" type="button">＋ Registrar hoje</button>':''}<button class="btn secondary open-project" type="button">${owned?'Abrir diário':'Acompanhar obra'}</button></div></div>`;
@@ -217,7 +222,8 @@ function openProjectDialog(){ $('#projectForm').reset();$('#projectEngineerInput
 function closeProjectDialog(){ $('#projectDialog').close(); }
 
 $('#authTabs').addEventListener('click',(e)=>{ const b=e.target.closest('[data-auth]'); if(!b)return; $$('#authTabs .seg').forEach(x=>x.classList.toggle('active',x===b)); $('#authSubmit').textContent=b.dataset.auth==='login'?'Entrar':'Criar conta'; $('#authPassword').autocomplete=b.dataset.auth==='login'?'current-password':'new-password'; });
-$('#authForm').addEventListener('submit',async(e)=>{e.preventDefault();const mode=$('#authTabs .seg.active').dataset.auth;const email=$('#authEmail').value.trim();const password=$('#authPassword').value;$('#authMessage').textContent='';try{state.user=mode==='login'?await backend.login(email,password):await backend.register(email,password);await openDashboard();}catch(err){$('#authMessage').textContent=humanFirebaseError(err);} });
+$('#authForm').addEventListener('submit',async(e)=>{e.preventDefault();const email=$('#authEmail').value.trim();const password=$('#authPassword').value;$('#authMessage').textContent='';try{state.user=await backend.login(email,password);await openDashboard();}catch(err){$('#authMessage').textContent=humanFirebaseError(err);} });
+$('#forgotPasswordBtn')?.addEventListener('click',async()=>{const email=$('#authEmail').value.trim();if(!email){$('#authMessage').textContent='Digite seu e-mail para receber a redefinição de senha.';return;}try{await firebase.sendPasswordResetEmail(firebase.auth,email);$('#authMessage').textContent='Enviamos um link para redefinir sua senha.';}catch(err){$('#authMessage').textContent=humanFirebaseError(err);}});
 $('#demoEnterBtn').addEventListener('click',async()=>{state.user=await backend.login('engenharia@demo.local','demo');await openDashboard();});
 $('#logoutBtn').addEventListener('click',async()=>{await backend.logout();state.user=null;state.project=null;if(!isFirebaseConfigured)showView('authView');});
 $('#newProjectBtn').addEventListener('click',openProjectDialog);$('#closeProjectDialog').addEventListener('click',closeProjectDialog);$('#cancelProjectBtn').addEventListener('click',closeProjectDialog);
@@ -237,7 +243,7 @@ window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();state.def
 $('#installBtn').addEventListener('click',async()=>{if(!state.deferredPrompt)return;state.deferredPrompt.prompt();await state.deferredPrompt.userChoice;state.deferredPrompt=null;$('#installBtn').classList.add('hidden');});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
 
-function humanFirebaseError(err){ const code=err?.code||''; if(code.includes('invalid-credential'))return'E-mail ou senha inválidos.';if(code.includes('email-already-in-use'))return'Este e-mail já possui uma conta.';if(code.includes('weak-password'))return'A senha deve ter pelo menos 6 caracteres.';if(code.includes('invalid-email'))return'Informe um e-mail válido.';return err?.message||'Não foi possível concluir a operação.'; }
+function humanFirebaseError(err){ const code=err?.code||''; if(code.includes('invalid-credential'))return'E-mail ou senha inválidos.';if(code.includes('email-already-in-use'))return'Este e-mail já possui uma conta.';if(code.includes('weak-password'))return'A senha deve ter pelo menos 6 caracteres.';if(code.includes('invalid-email'))return'Informe um e-mail válido.';if(code.includes('admin-restricted-operation'))return'A criação de contas é controlada pela L Engenharia.';return err?.message||'Não foi possível concluir a operação.'; }
 
 $('#entryDate').value=todayISO(); addServiceRow();
 initFirebase().catch(err=>{console.error(err);$('#authMessage').textContent='Falha ao iniciar o aplicativo. Verifique a configuração do Firebase.';});
