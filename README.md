@@ -96,3 +96,9 @@ Fluxo recomendado:
 - senha inicial padrão do cliente: `123456`;
 - o Firebase exige no mínimo 6 caracteres, portanto `1235` e `12345` não são aceitos;
 - depois do primeiro acesso, a senha só deve ser trocada por **Esqueci minha senha**.
+
+## V9 — correção do Diário
+- O cadastro de serviços e fotos agora abre **dentro da própria aba Diário**, logo abaixo do botão `+ Incluir serviços e fotos`.
+- O botão `+ Adicionar outro serviço` cria quantas linhas forem necessárias.
+- O botão `Adicionar fotos` permite selecionar várias imagens e repetir a seleção até 20 fotos por atualização.
+- A senha inicial do cliente permanece `123456`, pois o Firebase exige no mínimo 6 caracteres.

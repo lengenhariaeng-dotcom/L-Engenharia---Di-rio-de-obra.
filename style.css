@@ -38,3 +38,16 @@ label{display:block;font-size:13px;font-weight:800;color:#394150}label+label{mar
 .fixed-password-row{grid-template-columns:1fr}
 .fixed-password-row input[readonly]{background:#f3f5f7;color:#111827;font-weight:900}
 @media(max-width:700px){.diary-add-btn,.empty-add-btn{width:100%}}
+
+/* V9 — formulário de serviços e fotos diretamente dentro da aba Diário */
+.role-hidden{display:none!important}
+.entry-composer{margin:0 0 18px}
+.entry-composer-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:12px;padding:18px 20px;background:#eef1f5;border:1px solid var(--line);border-radius:18px}
+.entry-composer-head h2{margin:5px 0 4px;font-size:21px}.entry-composer-head p{margin:0;color:var(--muted);font-size:13px}
+.entry-form-inline{border:2px solid #d7dce4;box-shadow:0 10px 24px rgba(18,24,38,.05)}
+.entry-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.entry-actions .btn{margin:0}
+@media(max-width:700px){.entry-composer-head{flex-direction:column;align-items:stretch}.entry-composer-head .btn{width:100%}.entry-actions{flex-direction:column}.entry-actions .btn{width:100%}}
+
+/* V10 - Diário sempre aberto e ações separadas */
+.entry-composer{margin-bottom:26px}.entry-composer.role-hidden{display:none!important}.simple-head{margin-bottom:20px}.simple-head h2{margin:5px 0 6px}.simple-head p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}.service-panel,.photo-panel{border:1px solid var(--line);background:#fafbfc;border-radius:16px;padding:16px;margin-top:18px}.section-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.section-help{font-size:12px;color:var(--muted);margin-top:4px}.service-row-v10{grid-template-columns:minmax(0,1fr) 44px;align-items:end}.service-field{margin:0!important;display:block}.service-label{display:block;font-size:12px;font-weight:900;color:#394150;margin-bottom:6px}.service-field input{width:100%}.separate-action{margin-top:12px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px}.action-plus{font-size:22px;line-height:1;font-weight:700}.photo-action{cursor:pointer;width:max-content;max-width:100%}.notes-label{display:block;margin-top:18px}.publish-actions{margin-top:22px}.publish-main{min-width:190px}.history-heading{margin:30px 0 14px}.history-heading h2{margin:4px 0 0;font-size:19px}
+@media(max-width:620px){.service-row-v10{grid-template-columns:minmax(0,1fr) 44px}.separate-action,.photo-action{width:100%}.publish-actions{display:grid;grid-template-columns:1fr}.publish-main{width:100%}}

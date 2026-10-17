@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
   <div id="app">
@@ -105,57 +105,71 @@
         </nav>
 
         <section id="timelineTab" class="tab-view">
-          <div class="diary-toolbar admin-only no-print">
+          <div class="diary-toolbar no-print">
             <div>
               <h2>Diário da obra</h2>
-              <p>Registre os serviços executados e as fotos do dia.</p>
+              <p id="diaryIntro">Acompanhe os registros de serviços e fotos da obra.</p>
             </div>
-            <button id="timelineAddBtn" class="btn primary diary-add-btn" type="button"><span>＋</span> Adicionar serviços e fotos</button>
+          </div>
+
+          <div id="entryComposer" class="entry-composer admin-only no-print">
+            <form id="entryForm" class="card form-card entry-form-inline">
+              <div class="entry-composer-head simple-head">
+                <div>
+                  <span class="eyebrow">NOVA ATUALIZAÇÃO</span>
+                  <h2>Registrar serviços do dia</h2>
+                  <p>Preencha o Serviço 1 e use o botão <strong>+ Adicionar serviço</strong> para inserir Serviço 2, Serviço 3 e assim por diante.</p>
+                </div>
+              </div>
+
+              <div class="form-grid two">
+                <label>Data<input id="entryDate" type="date" required></label>
+                <label>Andamento da obra
+                  <div class="range-row"><input id="entryProgress" type="range" min="0" max="100" value="0"><output id="entryProgressValue">0%</output></div>
+                </label>
+              </div>
+
+              <div class="services-block service-panel">
+                <div class="section-title-row">
+                  <div>
+                    <div class="label-title">Serviços executados</div>
+                    <div class="section-help">Exemplo: Serviço 1 — Instalação de forro.</div>
+                  </div>
+                </div>
+                <div id="serviceRows" class="service-rows"></div>
+                <button id="addServiceBtn" class="btn secondary separate-action" type="button"><span class="action-plus">＋</span> Adicionar serviço</button>
+              </div>
+
+              <div class="photo-upload-block photo-panel">
+                <div class="label-title">Fotos do dia <small>(até 20 fotos)</small></div>
+                <p class="section-help">As fotos ficam vinculadas aos serviços desta atualização.</p>
+                <label class="btn secondary separate-action photo-action" for="entryPhotos">
+                  <span class="action-plus">＋</span> Adicionar fotos
+                </label>
+                <input id="entryPhotos" class="file-hidden" type="file" accept="image/*" multiple>
+                <div id="photoSelectionInfo" class="photo-selection-info">Nenhuma foto selecionada.</div>
+                <div id="photoPreview" class="photo-grid"></div>
+              </div>
+
+              <label class="notes-label">Observação do dia <small>(opcional)</small><textarea id="entryNotes" rows="3" maxlength="700" placeholder="Ex.: Serviço concluído conforme previsto. Amanhã iniciaremos a pintura."></textarea></label>
+
+              <p id="entryMessage" class="form-message" aria-live="polite"></p>
+              <div class="entry-actions publish-actions">
+                <button id="publishEntryBtn" class="btn primary publish-main" type="submit">Publicar no Diário</button>
+                <button id="clearEntryBtn" class="btn ghost" type="button">Limpar campos</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="history-heading">
+            <div><span class="eyebrow">HISTÓRICO</span><h2>Registros publicados</h2></div>
           </div>
           <div id="timelineList" class="timeline"></div>
           <div id="emptyTimeline" class="empty hidden">
             <div class="empty-icon">📋</div>
-            <h3>Ainda não há registros</h3>
-            <p>Adicione a primeira atualização da obra.</p>
-            <button id="emptyTimelineAddBtn" class="btn primary empty-add-btn admin-only no-print" type="button"><span>＋</span> Adicionar serviços e fotos</button>
+            <h3>Ainda não há registros publicados</h3>
+            <p>Use o formulário acima para registrar o primeiro serviço da obra.</p>
           </div>
-        </section>
-
-        <section id="newEntryTab" class="tab-view hidden admin-only">
-          <div class="section-head entry-section-head">
-            <div><h2>Nova atualização</h2><p>Digite os serviços executados, inclua quantas linhas quiser no + e anexe as fotos do dia.</p></div>
-            <button id="backToDiaryBtn" class="btn ghost" type="button">← Voltar ao diário</button>
-          </div>
-          <form id="entryForm" class="card form-card">
-            <div class="form-grid two">
-              <label>Data<input id="entryDate" type="date" required></label>
-              <label>Andamento da obra
-                <div class="range-row"><input id="entryProgress" type="range" min="0" max="100" value="0"><output id="entryProgressValue">0%</output></div>
-              </label>
-            </div>
-
-            <div class="services-block">
-              <div class="label-title">Serviços executados</div>
-              <div id="serviceRows" class="service-rows"></div>
-              <button id="addServiceBtn" class="add-service" type="button"><span>+</span> Adicionar outro serviço</button>
-            </div>
-
-            <label>Observação do dia <small>(opcional)</small><textarea id="entryNotes" rows="3" maxlength="700" placeholder="Ex.: Serviço concluído conforme previsto. Amanhã iniciaremos a pintura."></textarea></label>
-
-            <div class="photo-upload-block">
-              <div class="label-title">Fotos do dia <small>(até 20 fotos)</small></div>
-              <label class="photo-picker" for="entryPhotos">
-                <span class="photo-picker-icon">＋</span>
-                <span><strong>Adicionar fotos</strong><small>Você pode selecionar várias de uma vez ou adicionar em etapas.</small></span>
-              </label>
-              <input id="entryPhotos" class="file-hidden" type="file" accept="image/*" multiple>
-              <div id="photoSelectionInfo" class="photo-selection-info">Nenhuma foto selecionada.</div>
-              <div id="photoPreview" class="photo-grid"></div>
-            </div>
-
-            <p id="entryMessage" class="form-message" aria-live="polite"></p>
-            <button id="publishEntryBtn" class="btn primary" type="submit">Publicar atualização</button>
-          </form>
         </section>
 
         <section id="reportTab" class="tab-view hidden">
@@ -292,6 +306,6 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
 
-  <script type="module" src="app.js"></script>
+  <script type="module" src="app.js?v=10"></script>
 </body>
 </html>

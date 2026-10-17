@@ -104,7 +104,7 @@ async function initFirebase(){
 
 function showView(id){ $$('.view').forEach(v=>v.classList.add('hidden')); $('#'+id).classList.remove('hidden'); window.scrollTo({top:0,behavior:'smooth'}); }
 function setTab(name){
-  const viewIds={timeline:'timelineTab',report:'reportTab',settings:'settingsTab','new-entry':'newEntryTab'};
+  const viewIds={timeline:'timelineTab',report:'reportTab',settings:'settingsTab'};
   const viewId=viewIds[name] || `${name}Tab`;
   $$('.tab-view').forEach(v=>v.classList.add('hidden'));
   const target=$('#'+viewId);
@@ -117,10 +117,12 @@ function isAdminUser(){ return !isFirebaseConfigured || (state.user?.email||'').
 function isOwner(){ return !!state.project && isAdminUser() && !state.demoClientView; }
 function applyRole(){
   const owner=isOwner();
-  $$('.admin-only').forEach(el=>el.classList.toggle('hidden',!owner));
+  $$('.admin-only').forEach(el=>el.classList.toggle('role-hidden',!owner));
   $('#deleteProjectBtn').classList.toggle('hidden',!owner);
   $('#projectRole').textContent=owner?'GESTÃO DA OBRA':'ACOMPANHAMENTO DO CLIENTE — SOMENTE LEITURA';
   $('#backBtn').textContent=owner?'← Obras':'← Minhas obras';
+  const intro=$('#diaryIntro');
+  if(intro) intro.textContent=owner?'Cadastre abaixo os serviços executados e as fotos do dia.':'Acompanhe abaixo os serviços e fotos publicados pela L Engenharia.';
 }
 
 async function openDashboard(){
@@ -163,12 +165,9 @@ async function openProject(projectId,initialTab='timeline'){
   const p=state.projects.find(x=>x.id===projectId); if(!p)return; state.project={...p}; state.demoClientView=false;
   state.entries=await backend.listEntries(projectId); state.project.lastProgress=state.entries.at(-1)?.progress||0;
   renderProjectHeader(); renderTimeline(); populateSettings(); renderReport(); applyRole(); showView('projectView');
+  setTab('timeline');
   if(initialTab==='new-entry' && isOwner()){
-    resetEntryForm();
-    setTab('new-entry');
-    setTimeout(()=>$$('.service-row input')[0]?.focus(),120);
-  }else{
-    setTab('timeline');
+    setTimeout(()=>openEntryComposer(),80);
   }
   $('#demoClientToggle').classList.toggle('hidden',isFirebaseConfigured || p.ownerUid!==state.user.uid);
 }
@@ -187,14 +186,28 @@ function renderTimeline(){
 }
 
 function addServiceRow(value=''){
-  const wrap=document.createElement('div'); wrap.className='service-row';
-  wrap.innerHTML=`<span class="service-number"></span><input type="text" maxlength="150" value="${escapeHtml(value)}" placeholder="Ex.: Instalação de forro"><button class="service-remove" type="button" aria-label="Remover serviço">×</button>`;
+  const wrap=document.createElement('div'); wrap.className='service-row service-row-v10';
+  wrap.innerHTML=`<label class="service-field"><span class="service-label"></span><input type="text" maxlength="150" value="${escapeHtml(value)}" placeholder="Ex.: Instalação de forro"></label><button class="service-remove" type="button" aria-label="Remover serviço">×</button>`;
   wrap.querySelector('.service-remove').addEventListener('click',()=>{ const rows=$$('.service-row'); if(rows.length===1){wrap.querySelector('input').value='';wrap.querySelector('input').focus();return;} wrap.remove();renumberServices(); });
   wrap.querySelector('input').addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); if(e.target.value.trim()){addServiceRow();$$('.service-row input').at(-1).focus();} } });
   $('#serviceRows').appendChild(wrap); renumberServices();
 }
-function renumberServices(){ $$('.service-row').forEach((r,i)=>r.querySelector('.service-number').textContent=i+1); }
+function renumberServices(){ $$('.service-row').forEach((r,i)=>{const label=r.querySelector('.service-label'); if(label) label.textContent=`Serviço ${i+1}`;}); }
 function resetEntryForm(){ $('#entryForm').reset(); $('#entryDate').value=todayISO(); const prog=state.entries.at(-1)?.progress||0; $('#entryProgress').value=prog; $('#entryProgressValue').textContent=prog+'%'; $('#serviceRows').innerHTML=''; addServiceRow(); state.pendingPhotos=[]; renderPhotoPreview(); $('#entryMessage').textContent=''; }
+function openEntryComposer(){
+  if(!isOwner()) return;
+  setTab('timeline');
+  const composer=$('#entryComposer');
+  composer?.classList.remove('hidden');
+  requestAnimationFrame(()=>{
+    composer?.scrollIntoView({behavior:'smooth',block:'start'});
+    setTimeout(()=>$$('.service-row input')[0]?.focus(),120);
+  });
+}
+function closeEntryComposer(){
+  $('#entryMessage').textContent='';
+}
+
 
 async function imageToCanvas(file,max=1600){
   if(!file?.type?.startsWith('image/')) throw new Error('Arquivo inválido');
@@ -281,10 +294,8 @@ $('#projectForm').addEventListener('submit',async(e)=>{
   }catch(err){$('#projectMessage').textContent=err.message||'Não foi possível criar a obra.';}
 });
 $('#backBtn').addEventListener('click',openDashboard);$$('.tab').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
-$('#timelineAddBtn').addEventListener('click',()=>{ if(!isOwner()) return; resetEntryForm(); setTab('new-entry'); setTimeout(()=>$$('.service-row input')[0]?.focus(),80); });
-$('#emptyTimelineAddBtn')?.addEventListener('click',()=>{ if(!isOwner()) return; resetEntryForm(); setTab('new-entry'); setTimeout(()=>$$('.service-row input')[0]?.focus(),80); });
-$('#backToDiaryBtn').addEventListener('click',()=>setTab('timeline'));
 $('#addServiceBtn').addEventListener('click',()=>{addServiceRow();$$('.service-row input').at(-1).focus();});
+$('#clearEntryBtn')?.addEventListener('click',()=>{resetEntryForm();$$('.service-row input')[0]?.focus();});
 $('#entryProgress').addEventListener('input',(e)=>$('#entryProgressValue').textContent=e.target.value+'%');
 $('#entryPhotos').addEventListener('change',(e)=>previewFiles(e.target.files));
 $('#entryForm').addEventListener('submit',async(e)=>{e.preventDefault();const services=$$('.service-row input').map(x=>x.value.trim()).filter(Boolean);if(!services.length){$('#entryMessage').textContent='Adicione pelo menos um serviço realizado.';return;}const btn=$('#publishEntryBtn');btn.disabled=true;btn.textContent='Publicando...';try{await backend.addEntry(state.project.id,{date:$('#entryDate').value,services,notes:$('#entryNotes').value.trim(),progress:Number($('#entryProgress').value)},state.pendingPhotos);state.entries=await backend.listEntries(state.project.id);state.project.lastProgress=state.entries.at(-1)?.progress||0;if(isOwner())state.project=await backend.updateProject(state.project.id,{lastProgress:state.project.lastProgress});renderTimeline();renderProjectHeader();renderReport();resetEntryForm();setTab('timeline');toast('Atualização publicada.');}catch(err){$('#entryMessage').textContent=err.message||'Não foi possível publicar.';}finally{btn.disabled=false;btn.textContent='Publicar atualização';}});
