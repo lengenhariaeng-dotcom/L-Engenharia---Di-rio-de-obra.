@@ -5,7 +5,7 @@ const $$ = (s) => [...document.querySelectorAll(s)];
 const state = { user: null, projects: [], project: null, entries: [], demoClientView: false, pendingPhotos: [], deferredPrompt: null, pendingCreatedProjectId: null };
 const DEMO_KEY = 'leng_diario_demo_v1';
 const ADMIN_EMAIL = 'lengenharia.eng@gmail.com';
-const DEFAULT_CLIENT_PASSWORD = '123456@';
+const DEFAULT_CLIENT_PASSWORD = '123456';
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const uid = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const fmtDate = (iso) => iso ? new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`)) : '—';
@@ -56,7 +56,7 @@ class FirebaseBackend {
     const email=(state.user?.email||'').toLowerCase();
     let q;
     if(email===ADMIN_EMAIL){
-      q=this.api.query(this.api.collection(this.api.db,'projects'),this.api.where('ownerUid','==',state.user.uid));
+      q=this.api.collection(this.api.db,'projects');
     }else{
       q=this.api.query(this.api.collection(this.api.db,'projects'),this.api.where('clientEmail','==',email||'__none__'));
     }
@@ -104,12 +104,17 @@ async function initFirebase(){
 
 function showView(id){ $$('.view').forEach(v=>v.classList.add('hidden')); $('#'+id).classList.remove('hidden'); window.scrollTo({top:0,behavior:'smooth'}); }
 function setTab(name){
-  $$('.tab-view').forEach(v=>v.classList.add('hidden')); $('#'+name+'Tab').classList.remove('hidden');
+  const viewIds={timeline:'timelineTab',report:'reportTab',settings:'settingsTab','new-entry':'newEntryTab'};
+  const viewId=viewIds[name] || `${name}Tab`;
+  $$('.tab-view').forEach(v=>v.classList.add('hidden'));
+  const target=$('#'+viewId);
+  if(!target){ console.error('Aba não encontrada:',name,viewId); return; }
+  target.classList.remove('hidden');
   $$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
   if(name==='report') renderReport();
 }
 function isAdminUser(){ return !isFirebaseConfigured || (state.user?.email||'').toLowerCase()===ADMIN_EMAIL; }
-function isOwner(){ return state.project && isAdminUser() && state.project.ownerUid===state.user?.uid && !state.demoClientView; }
+function isOwner(){ return !!state.project && isAdminUser() && !state.demoClientView; }
 function applyRole(){
   const owner=isOwner();
   $$('.admin-only').forEach(el=>el.classList.toggle('hidden',!owner));
@@ -261,7 +266,6 @@ $('#forgotPasswordBtn')?.addEventListener('click',async()=>{const email=$('#auth
 $('#demoEnterBtn').addEventListener('click',async()=>{state.user=await backend.login('engenharia@demo.local','demo');await openDashboard();});
 $('#logoutBtn').addEventListener('click',async()=>{await backend.logout();state.user=null;state.project=null;if(!isFirebaseConfigured)showView('authView');});
 $('#newProjectBtn').addEventListener('click',openProjectDialog);$('#closeProjectDialog').addEventListener('click',closeProjectDialog);$('#cancelProjectBtn').addEventListener('click',closeProjectDialog);
-$('#generateClientPasswordBtn').addEventListener('click',()=>{refreshClientPassword();toast('Senha padrão aplicada.');});
 $('#closeClientAccessDialog').addEventListener('click',continueToCreatedProject);
 $('#continueToProjectBtn').addEventListener('click',continueToCreatedProject);
 $('#openFirebaseUsersBtn').addEventListener('click',()=>window.open('https://console.firebase.google.com/project/l-engenharia---diario-de-obra/authentication/users','_blank','noopener'));
@@ -278,6 +282,7 @@ $('#projectForm').addEventListener('submit',async(e)=>{
 });
 $('#backBtn').addEventListener('click',openDashboard);$$('.tab').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
 $('#timelineAddBtn').addEventListener('click',()=>{ if(!isOwner()) return; resetEntryForm(); setTab('new-entry'); setTimeout(()=>$$('.service-row input')[0]?.focus(),80); });
+$('#emptyTimelineAddBtn')?.addEventListener('click',()=>{ if(!isOwner()) return; resetEntryForm(); setTab('new-entry'); setTimeout(()=>$$('.service-row input')[0]?.focus(),80); });
 $('#backToDiaryBtn').addEventListener('click',()=>setTab('timeline'));
 $('#addServiceBtn').addEventListener('click',()=>{addServiceRow();$$('.service-row input').at(-1).focus();});
 $('#entryProgress').addEventListener('input',(e)=>$('#entryProgressValue').textContent=e.target.value+'%');
@@ -293,7 +298,7 @@ window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();state.def
 $('#installBtn').addEventListener('click',async()=>{if(!state.deferredPrompt)return;state.deferredPrompt.prompt();await state.deferredPrompt.userChoice;state.deferredPrompt=null;$('#installBtn').classList.add('hidden');});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
 
-function humanFirebaseError(err){ const code=err?.code||''; if(code.includes('invalid-credential'))return'E-mail ou senha inválidos.';if(code.includes('email-already-in-use'))return'Este e-mail já possui uma conta.';if(code.includes('weak-password'))return'A senha deve ter pelo menos 6 caracteres.';if(code.includes('invalid-email'))return'Informe um e-mail válido.';if(code.includes('admin-restricted-operation'))return'A criação de contas é controlada pela L Engenharia.';if(code.includes('permission-denied'))return'Seu acesso é somente para visualizar as obras vinculadas ao seu e-mail.';return err?.message||'Não foi possível concluir a operação.'; }
+function humanFirebaseError(err){ const code=err?.code||''; if(code.includes('invalid-credential'))return'E-mail ou senha inválidos.';if(code.includes('email-already-in-use'))return'Este e-mail já possui uma conta.';if(code.includes('weak-password'))return'A senha do Firebase deve ter pelo menos 6 caracteres. Use 123456 como senha inicial.';if(code.includes('invalid-email'))return'Informe um e-mail válido.';if(code.includes('admin-restricted-operation'))return'A criação de contas é controlada pela L Engenharia.';if(code.includes('permission-denied'))return'Seu acesso é somente para visualizar as obras vinculadas ao seu e-mail.';return err?.message||'Não foi possível concluir a operação.'; }
 
 $('#entryDate').value=todayISO(); addServiceRow();
 initFirebase().catch(err=>{console.error(err);$('#authMessage').textContent='Falha ao iniciar o aplicativo. Verifique a configuração do Firebase.';});

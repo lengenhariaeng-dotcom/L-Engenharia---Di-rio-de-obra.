@@ -1,4 +1,4 @@
-const CACHE = 'leng-diario-v6-restricted-diary-plus';
+const CACHE = 'leng-diario-v8';
 const LOCAL_ASSETS = [
   './',
   './index.html',

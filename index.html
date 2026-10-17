@@ -110,13 +110,14 @@
               <h2>Diário da obra</h2>
               <p>Registre os serviços executados e as fotos do dia.</p>
             </div>
-            <button id="timelineAddBtn" class="btn primary diary-add-btn" type="button"><span>＋</span> Incluir serviços e fotos</button>
+            <button id="timelineAddBtn" class="btn primary diary-add-btn" type="button"><span>＋</span> Adicionar serviços e fotos</button>
           </div>
           <div id="timelineList" class="timeline"></div>
           <div id="emptyTimeline" class="empty hidden">
             <div class="empty-icon">📋</div>
             <h3>Ainda não há registros</h3>
             <p>Adicione a primeira atualização da obra.</p>
+            <button id="emptyTimelineAddBtn" class="btn primary empty-add-btn admin-only no-print" type="button"><span>＋</span> Adicionar serviços e fotos</button>
           </div>
         </section>
 
@@ -254,9 +255,8 @@
           <label>Cliente<input id="projectClientInput" required maxlength="120" placeholder="Nome do cliente"></label>
           <label>E-mail do cliente<input id="projectClientEmailInput" type="email" placeholder="cliente@email.com"></label>
           <label>Senha inicial do cliente
-            <div class="password-row">
-              <input id="projectClientPasswordInput" type="text" value="123456@" minlength="6" aria-label="Senha inicial do cliente">
-              <button id="generateClientPasswordBtn" class="btn secondary compact" type="button">Usar padrão</button>
+            <div class="password-row fixed-password-row">
+              <input id="projectClientPasswordInput" type="text" value="123456" minlength="6" readonly aria-label="Senha inicial padrão do cliente">
             </div>
           </label>
           <label>Endereço / local<input id="projectAddressInput" maxlength="180" placeholder="Ex.: Osasco/SP"></label>
@@ -264,7 +264,7 @@
           <label>CREA<input id="projectCreaInput" value="5070215494" maxlength="50"></label>
           <label>Data de início<input id="projectStartInput" type="date"></label>
         </div>
-        <p class="helper"><strong>Acesso do cliente:</strong> a senha inicial padrão é <strong>123456@</strong>, mas você pode alterá-la antes de criar a obra. Por segurança, a senha <strong>não é salva</strong> na obra. Depois, crie o usuário em <strong>Firebase → Authentication → Usuários</strong> usando o mesmo e-mail e essa senha.</p>
+        <p class="helper"><strong>Acesso do cliente:</strong> a senha inicial padrão é <strong>123456</strong>. O Firebase exige no mínimo 6 caracteres, por isso não é possível usar 1235 ou 12345. A senha não é salva na obra e só deve ser alterada depois pelo cliente em <strong>Esqueci minha senha</strong>. Após criar a obra, cadastre o usuário em <strong>Firebase → Authentication → Usuários</strong> com o mesmo e-mail e a senha <strong>123456</strong>.</p>
         <p id="projectMessage" class="form-message" aria-live="polite"></p>
         <div class="modal-actions"><button id="cancelProjectBtn" class="btn ghost" type="button">Cancelar</button><button class="btn primary" type="submit">Criar obra</button></div>
       </form>
@@ -279,7 +279,7 @@
           <label>E-mail<input id="createdClientEmail" type="text" readonly></label>
           <label>Senha inicial<input id="createdClientPassword" type="text" readonly></label>
         </div>
-        <p class="helper">Depois de criar o usuário no Firebase, envie o e-mail e a senha ao cliente. Ele poderá trocar a senha usando <strong>Esqueci minha senha</strong>.</p>
+        <p class="helper">Depois de criar o usuário no Firebase com a senha <strong>123456</strong>, envie o acesso ao cliente. Se ele quiser mudar a senha, deverá usar <strong>Esqueci minha senha</strong>.</p>
         <div class="access-actions">
           <button id="copyClientAccessBtn" class="btn secondary" type="button">Copiar acesso</button>
           <button id="openFirebaseUsersBtn" class="btn ghost" type="button">Abrir Firebase</button>
