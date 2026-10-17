@@ -1,4 +1,4 @@
-const CACHE = 'leng-diario-v2';
+const CACHE = 'leng-diario-v3-cloudinary';
 const LOCAL_ASSETS = [
   './',
   './index.html',

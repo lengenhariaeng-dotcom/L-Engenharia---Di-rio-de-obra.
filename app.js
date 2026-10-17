@@ -1,4 +1,4 @@
-import { firebaseConfig, isFirebaseConfigured } from './firebase-config.js';
+import { firebaseConfig, cloudinaryConfig, isFirebaseConfigured, isCloudinaryConfigured } from './firebase-config.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -66,17 +66,16 @@ class FirebaseBackend {
   }
   async listEntries(projectId){ const q=this.api.query(this.api.collection(this.api.db,'projects',projectId,'entries'),this.api.orderBy('date','asc')); const s=await this.api.getDocs(q); return s.docs.map(d=>({id:d.id,...d.data()})); }
   async addEntry(projectId,data,photoFiles){
-    const entryRef=await this.api.addDoc(this.api.collection(this.api.db,'projects',projectId,'entries'),{...data,photos:[],createdAt:this.api.serverTimestamp()});
+    if(photoFiles.length && !isCloudinaryConfigured) throw new Error('Cloudinary não configurado para envio de fotos.');
     const photos=[];
     for(let i=0;i<photoFiles.length;i++){
-      const file=photoFiles[i];
-      const compressed=await compressImageFile(file);
-      const base=(file.name||`foto_${i+1}`).replace(/\.[^.]+$/,'').replace(/[^a-zA-Z0-9_-]/g,'_');
-      const safe=`${base}.jpg`;
-      const sref=this.api.storageRef(this.api.storage,`projects/${projectId}/${entryRef.id}/${Date.now()}_${i}_${safe}`);
-      await this.api.uploadBytes(sref,compressed,{contentType:'image/jpeg'}); photos.push(await this.api.getDownloadURL(sref));
+      const compressed=await compressImageFile(photoFiles[i]);
+      photos.push(await uploadPhotoToCloudinary(compressed));
     }
-    if(photos.length) await this.api.updateDoc(entryRef,{photos});
+    const entryRef=await this.api.addDoc(
+      this.api.collection(this.api.db,'projects',projectId,'entries'),
+      {...data,photos,createdAt:this.api.serverTimestamp()}
+    );
     return {id:entryRef.id,...data,photos};
   }
   async deleteEntry(projectId,entryId){ await this.api.deleteDoc(this.api.doc(this.api.db,'projects',projectId,'entries',entryId)); }
@@ -84,14 +83,13 @@ class FirebaseBackend {
 
 async function initFirebase(){
   if(!isFirebaseConfigured){ backend=new DemoBackend(); $('#modeBadge').classList.remove('hidden'); $('#demoNotice').classList.remove('hidden'); $('#demoEnterBtn').classList.remove('hidden'); $('#authForm').classList.add('hidden'); return; }
-  const [{initializeApp},{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut},{getFirestore,collection,query,where,getDocs,addDoc,updateDoc,deleteDoc,doc,orderBy,serverTimestamp},{getStorage,ref:storageRef,uploadBytes,getDownloadURL}] = await Promise.all([
+  const [{initializeApp},{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut},{getFirestore,collection,query,where,getDocs,addDoc,updateDoc,deleteDoc,doc,orderBy,serverTimestamp}] = await Promise.all([
     import('https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js'),
     import('https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js'),
-    import('https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js'),
-    import('https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js')
+    import('https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js')
   ]);
-  const app=initializeApp(firebaseConfig); const auth=getAuth(app); const db=getFirestore(app); const storage=getStorage(app);
-  firebase={auth,db,storage,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,collection,query,where,getDocs,addDoc,updateDoc,deleteDoc,doc,orderBy,serverTimestamp,storageRef,uploadBytes,getDownloadURL};
+  const app=initializeApp(firebaseConfig); const auth=getAuth(app); const db=getFirestore(app);
+  firebase={auth,db,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,collection,query,where,getDocs,addDoc,updateDoc,deleteDoc,doc,orderBy,serverTimestamp};
   backend=new FirebaseBackend(firebase);
   onAuthStateChanged(auth, async (user)=>{ if(user){state.user=user;await openDashboard();}else{state.user=null;showView('authView');$('#logoutBtn').classList.add('hidden');} });
 }
@@ -181,6 +179,19 @@ async function fileToCompressedDataUrl(file){ const c=await imageToCanvas(file,1
 async function compressImageFile(file){
   try{const c=await imageToCanvas(file,1800);return await new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(new Error('Falha ao comprimir imagem')),'image/jpeg',.82));}
   catch{return file;}
+}
+async function uploadPhotoToCloudinary(file){
+  const body=new FormData();
+  body.append('file',file,'foto-obra.jpg');
+  body.append('upload_preset',cloudinaryConfig.uploadPreset);
+  const endpoint=`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudinaryConfig.cloudName)}/image/upload`;
+  const response=await fetch(endpoint,{method:'POST',body});
+  let payload={};
+  try{payload=await response.json();}catch{}
+  if(!response.ok || !payload.secure_url){
+    throw new Error(payload?.error?.message || 'Não foi possível enviar uma das fotos.');
+  }
+  return payload.secure_url;
 }
 function renderPhotoPreview(){
   const box=$('#photoPreview'); box.innerHTML='';
