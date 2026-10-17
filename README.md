@@ -64,7 +64,7 @@ Conta administradora configurada: `lengenharia.eng@gmail.com`.
 
 ## Senha inicial do cliente
 
-Ao criar uma obra, o aplicativo gera uma senha inicial forte para o cliente. Essa senha é exibida para cópia, mas **não é armazenada no Firestore nem na obra**.
+Ao criar uma obra, o campo de senha inicia com **`123456@`**. Você pode manter essa senha ou substituí-la por outra antes de criar a obra. A senha é exibida para cópia, mas **não é armazenada no Firestore nem na obra**.
 
 Fluxo recomendado:
 1. Cadastre a obra com o e-mail do cliente.
@@ -73,3 +73,15 @@ Fluxo recomendado:
 4. Crie o usuário usando exatamente o mesmo e-mail e a senha inicial gerada.
 5. Envie o acesso ao cliente.
 6. O cliente pode trocar a senha depois usando **Esqueci minha senha**.
+
+
+## Versão v6 — acesso separado e Diário mais intuitivo
+
+- administrador (`lengenharia.eng@gmail.com`): painel completo, criação de obras, edição, serviços, fotos e relatório;
+- cliente: área própria em **somente leitura**, sem botão de criar obra, sem edição, sem exclusão e sem publicação;
+- consulta de obras do cliente é feita somente por `clientEmail`, compatível com as regras restritas do Firestore;
+- na aba **Diário**, o administrador agora vê o botão **+ Incluir serviços e fotos**;
+- o formulário de atualização permite várias linhas de serviço no botão **+ Adicionar outro serviço** e até 20 fotos;
+- senha inicial do cliente vem como `123456@`, mas pode ser alterada antes de criar a obra.
+
+**Importante:** com a inscrição pública desativada no Firebase, a conta do cliente ainda deve ser criada em `Authentication > Usuários > Adicionar usuário`, usando o mesmo e-mail e a senha definida no cadastro da obra. Isso mantém o site seguro sem exigir servidor pago.

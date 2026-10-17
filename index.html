@@ -58,13 +58,13 @@
       <section id="dashboardView" class="view hidden">
         <div class="page-head">
           <div>
-            <span class="eyebrow">PAINEL DA EQUIPE</span>
-            <h1>Obras</h1>
+            <span id="dashboardEyebrow" class="eyebrow">PAINEL DA EQUIPE</span>
+            <h1 id="dashboardTitle">Obras</h1>
             <p id="welcomeText">Escolha uma obra ou toque no + para cadastrar outra.</p>
           </div>
           <button id="newProjectBtn" class="btn primary" type="button">+ Adicionar obra</button>
         </div>
-        <div class="dashboard-summary" aria-label="Resumo das obras">
+        <div id="dashboardSummary" class="dashboard-summary" aria-label="Resumo das obras">
           <div><span>Obras cadastradas</span><strong id="projectCount">0</strong></div>
           <div><span>Em andamento</span><strong id="activeProjectCount">0</strong></div>
           <div><span>Concluídas</span><strong id="doneProjectCount">0</strong></div>
@@ -100,12 +100,18 @@
 
         <nav class="tabs no-print" aria-label="Seções da obra">
           <button class="tab active" data-tab="timeline" type="button">Diário</button>
-          <button class="tab admin-only" data-tab="new-entry" type="button">+ Atualização</button>
           <button class="tab" data-tab="report" type="button">Relatório final</button>
           <button class="tab admin-only" data-tab="settings" type="button">Dados da obra</button>
         </nav>
 
         <section id="timelineTab" class="tab-view">
+          <div class="diary-toolbar admin-only no-print">
+            <div>
+              <h2>Diário da obra</h2>
+              <p>Registre os serviços executados e as fotos do dia.</p>
+            </div>
+            <button id="timelineAddBtn" class="btn primary diary-add-btn" type="button"><span>＋</span> Incluir serviços e fotos</button>
+          </div>
           <div id="timelineList" class="timeline"></div>
           <div id="emptyTimeline" class="empty hidden">
             <div class="empty-icon">📋</div>
@@ -115,8 +121,9 @@
         </section>
 
         <section id="newEntryTab" class="tab-view hidden admin-only">
-          <div class="section-head">
-            <div><h2>Nova atualização</h2><p>Digite os serviços executados e use o botão + para adicionar outros.</p></div>
+          <div class="section-head entry-section-head">
+            <div><h2>Nova atualização</h2><p>Digite os serviços executados, inclua quantas linhas quiser no + e anexe as fotos do dia.</p></div>
+            <button id="backToDiaryBtn" class="btn ghost" type="button">← Voltar ao diário</button>
           </div>
           <form id="entryForm" class="card form-card">
             <div class="form-grid two">
@@ -248,8 +255,8 @@
           <label>E-mail do cliente<input id="projectClientEmailInput" type="email" placeholder="cliente@email.com"></label>
           <label>Senha inicial do cliente
             <div class="password-row">
-              <input id="projectClientPasswordInput" type="text" readonly aria-label="Senha inicial do cliente">
-              <button id="generateClientPasswordBtn" class="btn secondary compact" type="button">Gerar</button>
+              <input id="projectClientPasswordInput" type="text" value="123456@" minlength="6" aria-label="Senha inicial do cliente">
+              <button id="generateClientPasswordBtn" class="btn secondary compact" type="button">Usar padrão</button>
             </div>
           </label>
           <label>Endereço / local<input id="projectAddressInput" maxlength="180" placeholder="Ex.: Osasco/SP"></label>
@@ -257,7 +264,7 @@
           <label>CREA<input id="projectCreaInput" value="5070215494" maxlength="50"></label>
           <label>Data de início<input id="projectStartInput" type="date"></label>
         </div>
-        <p class="helper"><strong>Acesso do cliente:</strong> o aplicativo gera uma senha inicial para você copiar. Por segurança, a senha <strong>não é salva</strong> na obra. Depois, crie o usuário em <strong>Firebase → Authentication → Usuários</strong> usando o mesmo e-mail e essa senha.</p>
+        <p class="helper"><strong>Acesso do cliente:</strong> a senha inicial padrão é <strong>123456@</strong>, mas você pode alterá-la antes de criar a obra. Por segurança, a senha <strong>não é salva</strong> na obra. Depois, crie o usuário em <strong>Firebase → Authentication → Usuários</strong> usando o mesmo e-mail e essa senha.</p>
         <p id="projectMessage" class="form-message" aria-live="polite"></p>
         <div class="modal-actions"><button id="cancelProjectBtn" class="btn ghost" type="button">Cancelar</button><button class="btn primary" type="submit">Criar obra</button></div>
       </form>

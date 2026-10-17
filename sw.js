@@ -1,4 +1,4 @@
-const CACHE = 'leng-diario-v5-client-password';
+const CACHE = 'leng-diario-v6-restricted-diary-plus';
 const LOCAL_ASSETS = [
   './',
   './index.html',
