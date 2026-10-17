@@ -2,7 +2,7 @@ import { firebaseConfig, cloudinaryConfig, isFirebaseConfigured, isCloudinaryCon
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
-const state = { user: null, projects: [], project: null, entries: [], demoClientView: false, pendingPhotos: [], deferredPrompt: null };
+const state = { user: null, projects: [], project: null, entries: [], demoClientView: false, pendingPhotos: [], deferredPrompt: null, pendingCreatedProjectId: null };
 const DEMO_KEY = 'leng_diario_demo_v1';
 const ADMIN_EMAIL = 'lengenharia.eng@gmail.com';
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -218,8 +218,34 @@ function renderReport(){
   $('#reportEntries').innerHTML=ordered.length?ordered.map((e,idx)=>`<article class="report-entry"><div class="report-entry-head"><h3>3.${idx+1} — ${fmtDate(e.date)}</h3><span>Andamento registrado: ${e.progress}%</span></div><ol>${e.services.map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ol>${e.notes?`<p><strong>Observação:</strong> ${escapeHtml(e.notes)}</p>`:''}${e.photos?.length?`<div class="report-photo-grid">${e.photos.map((src,i)=>`<div class="report-photo"><img src="${src}" alt="Registro fotográfico ${i+1}"><span>Foto ${i+1}</span></div>`).join('')}</div>`:'<p><em>Sem registro fotográfico nesta data.</em></p>'}</article>`).join(''):'<p>Nenhum registro cadastrado.</p>';
 }
 
-function openProjectDialog(){ $('#projectForm').reset();$('#projectEngineerInput').value='Luiz Gustavo Tavares da Costa';$('#projectCreaInput').value='5070215494';$('#projectStartInput').value=todayISO();$('#projectMessage').textContent='';$('#projectDialog').showModal(); }
+function generateClientPassword(){
+  const upper='ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower='abcdefghijkmnopqrstuvwxyz';
+  const digits='23456789';
+  const symbols='!@#$%';
+  const all=upper+lower+digits+symbols;
+  const pick=(chars)=>chars[crypto.getRandomValues(new Uint32Array(1))[0]%chars.length];
+  const chars=[pick(upper),pick(lower),pick(digits),pick(symbols)];
+  while(chars.length<12) chars.push(pick(all));
+  for(let i=chars.length-1;i>0;i--){ const j=crypto.getRandomValues(new Uint32Array(1))[0]%(i+1); [chars[i],chars[j]]=[chars[j],chars[i]]; }
+  return chars.join('');
+}
+function refreshClientPassword(){ $('#projectClientPasswordInput').value=generateClientPassword(); }
+function openProjectDialog(){ $('#projectForm').reset();$('#projectEngineerInput').value='Luiz Gustavo Tavares da Costa';$('#projectCreaInput').value='5070215494';$('#projectStartInput').value=todayISO();refreshClientPassword();$('#projectMessage').textContent='';$('#projectDialog').showModal(); }
 function closeProjectDialog(){ $('#projectDialog').close(); }
+function showClientAccessDialog(email,password,projectId){
+  state.pendingCreatedProjectId=projectId;
+  $('#createdClientEmail').value=email||'';
+  $('#createdClientPassword').value=password||'';
+  $('#clientAccessMessage').textContent='';
+  $('#clientAccessDialog').showModal();
+}
+async function continueToCreatedProject(){
+  const id=state.pendingCreatedProjectId; state.pendingCreatedProjectId=null;
+  if($('#clientAccessDialog').open) $('#clientAccessDialog').close();
+  if(id) await openProject(id,'new-entry');
+}
+
 
 $('#authTabs').addEventListener('click',(e)=>{ const b=e.target.closest('[data-auth]'); if(!b)return; $$('#authTabs .seg').forEach(x=>x.classList.toggle('active',x===b)); $('#authSubmit').textContent=b.dataset.auth==='login'?'Entrar':'Criar conta'; $('#authPassword').autocomplete=b.dataset.auth==='login'?'current-password':'new-password'; });
 $('#authForm').addEventListener('submit',async(e)=>{e.preventDefault();const email=$('#authEmail').value.trim();const password=$('#authPassword').value;$('#authMessage').textContent='';try{state.user=await backend.login(email,password);await openDashboard();}catch(err){$('#authMessage').textContent=humanFirebaseError(err);} });
@@ -227,7 +253,21 @@ $('#forgotPasswordBtn')?.addEventListener('click',async()=>{const email=$('#auth
 $('#demoEnterBtn').addEventListener('click',async()=>{state.user=await backend.login('engenharia@demo.local','demo');await openDashboard();});
 $('#logoutBtn').addEventListener('click',async()=>{await backend.logout();state.user=null;state.project=null;if(!isFirebaseConfigured)showView('authView');});
 $('#newProjectBtn').addEventListener('click',openProjectDialog);$('#closeProjectDialog').addEventListener('click',closeProjectDialog);$('#cancelProjectBtn').addEventListener('click',closeProjectDialog);
-$('#projectForm').addEventListener('submit',async(e)=>{e.preventDefault();const data={name:$('#projectNameInput').value.trim(),client:$('#projectClientInput').value.trim(),clientEmail:$('#projectClientEmailInput').value.trim().toLowerCase(),address:$('#projectAddressInput').value.trim(),engineer:$('#projectEngineerInput').value.trim(),crea:$('#projectCreaInput').value.trim(),startDate:$('#projectStartInput').value,status:'Em andamento',conclusion:'',lastProgress:0};try{const p=await backend.createProject(data);state.projects.unshift(p);renderProjects();closeProjectDialog();toast('Obra criada. Agora registre a primeira atualização.');await openProject(p.id,'new-entry');}catch(err){$('#projectMessage').textContent=err.message||'Não foi possível criar a obra.';}});
+$('#generateClientPasswordBtn').addEventListener('click',()=>{refreshClientPassword();toast('Nova senha gerada.');});
+$('#closeClientAccessDialog').addEventListener('click',continueToCreatedProject);
+$('#continueToProjectBtn').addEventListener('click',continueToCreatedProject);
+$('#openFirebaseUsersBtn').addEventListener('click',()=>window.open('https://console.firebase.google.com/project/l-engenharia---diario-de-obra/authentication/users','_blank','noopener'));
+$('#copyClientAccessBtn').addEventListener('click',async()=>{const email=$('#createdClientEmail').value;const password=$('#createdClientPassword').value;const site=location.origin+location.pathname;const text=`Diário de Obra – L Engenharia\nE-mail: ${email}\nSenha inicial: ${password}\nAcesso: ${site}`;try{await navigator.clipboard.writeText(text);$('#clientAccessMessage').textContent='Acesso copiado. Agora cadastre este usuário no Firebase.';}catch{ $('#clientAccessMessage').textContent='Não foi possível copiar automaticamente. Selecione o e-mail e a senha acima.'; }});
+$('#projectForm').addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  const clientEmail=$('#projectClientEmailInput').value.trim().toLowerCase();
+  const initialPassword=$('#projectClientPasswordInput').value||generateClientPassword();
+  const data={name:$('#projectNameInput').value.trim(),client:$('#projectClientInput').value.trim(),clientEmail,address:$('#projectAddressInput').value.trim(),engineer:$('#projectEngineerInput').value.trim(),crea:$('#projectCreaInput').value.trim(),startDate:$('#projectStartInput').value,status:'Em andamento',conclusion:'',lastProgress:0};
+  try{
+    const p=await backend.createProject(data);state.projects.unshift(p);renderProjects();closeProjectDialog();toast('Obra criada.');
+    if(clientEmail) showClientAccessDialog(clientEmail,initialPassword,p.id); else await openProject(p.id,'new-entry');
+  }catch(err){$('#projectMessage').textContent=err.message||'Não foi possível criar a obra.';}
+});
 $('#backBtn').addEventListener('click',openDashboard);$$('.tab').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
 $('#addServiceBtn').addEventListener('click',()=>{addServiceRow();$$('.service-row input').at(-1).focus();});
 $('#entryProgress').addEventListener('input',(e)=>$('#entryProgressValue').textContent=e.target.value+'%');

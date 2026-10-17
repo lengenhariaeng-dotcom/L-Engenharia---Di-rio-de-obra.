@@ -246,15 +246,40 @@
           <label>Nome da obra<input id="projectNameInput" required maxlength="120" placeholder="Ex.: Reforma Apto 82"></label>
           <label>Cliente<input id="projectClientInput" required maxlength="120" placeholder="Nome do cliente"></label>
           <label>E-mail do cliente<input id="projectClientEmailInput" type="email" placeholder="cliente@email.com"></label>
+          <label>Senha inicial do cliente
+            <div class="password-row">
+              <input id="projectClientPasswordInput" type="text" readonly aria-label="Senha inicial do cliente">
+              <button id="generateClientPasswordBtn" class="btn secondary compact" type="button">Gerar</button>
+            </div>
+          </label>
           <label>Endereço / local<input id="projectAddressInput" maxlength="180" placeholder="Ex.: Osasco/SP"></label>
           <label>Responsável técnico<input id="projectEngineerInput" value="Luiz Gustavo Tavares da Costa" maxlength="120"></label>
           <label>CREA<input id="projectCreaInput" value="5070215494" maxlength="50"></label>
           <label>Data de início<input id="projectStartInput" type="date"></label>
         </div>
-        <p class="helper"><strong>Acesso do cliente:</strong> informe o e-mail que ele usará para entrar. A equipe poderá cadastrar quantas obras precisar pelo botão <strong>+</strong> do painel.</p>
+        <p class="helper"><strong>Acesso do cliente:</strong> o aplicativo gera uma senha inicial para você copiar. Por segurança, a senha <strong>não é salva</strong> na obra. Depois, crie o usuário em <strong>Firebase → Authentication → Usuários</strong> usando o mesmo e-mail e essa senha.</p>
         <p id="projectMessage" class="form-message" aria-live="polite"></p>
         <div class="modal-actions"><button id="cancelProjectBtn" class="btn ghost" type="button">Cancelar</button><button class="btn primary" type="submit">Criar obra</button></div>
       </form>
+    </dialog>
+
+
+    <dialog id="clientAccessDialog" class="modal access-modal">
+      <div class="modal-card">
+        <div class="modal-head"><div><span class="eyebrow">ACESSO DO CLIENTE</span><h2>Login pronto para cadastrar</h2></div><button id="closeClientAccessDialog" class="icon-btn" type="button" aria-label="Fechar">×</button></div>
+        <p class="helper access-helper">A obra foi criada. Agora cadastre o cliente no Firebase com os dados abaixo. A senha é exibida apenas nesta etapa e não fica armazenada no Diário de Obra.</p>
+        <div class="credential-box">
+          <label>E-mail<input id="createdClientEmail" type="text" readonly></label>
+          <label>Senha inicial<input id="createdClientPassword" type="text" readonly></label>
+        </div>
+        <p class="helper">Depois de criar o usuário no Firebase, envie o e-mail e a senha ao cliente. Ele poderá trocar a senha usando <strong>Esqueci minha senha</strong>.</p>
+        <div class="access-actions">
+          <button id="copyClientAccessBtn" class="btn secondary" type="button">Copiar acesso</button>
+          <button id="openFirebaseUsersBtn" class="btn ghost" type="button">Abrir Firebase</button>
+          <button id="continueToProjectBtn" class="btn primary" type="button">Continuar para a obra</button>
+        </div>
+        <p id="clientAccessMessage" class="form-message" aria-live="polite"></p>
+      </div>
     </dialog>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>

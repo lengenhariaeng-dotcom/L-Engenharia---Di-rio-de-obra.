@@ -61,3 +61,15 @@ Conta administradora configurada: `lengenharia.eng@gmail.com`.
 - crie contas de clientes no Firebase Console em **Authentication > Usuários > Adicionar usuário**;
 - no Firebase Authentication, desative a criação de contas por usuários em **Configurações > Ações do usuário**;
 - publique também as regras atualizadas do arquivo `firestore.rules`.
+
+## Senha inicial do cliente
+
+Ao criar uma obra, o aplicativo gera uma senha inicial forte para o cliente. Essa senha é exibida para cópia, mas **não é armazenada no Firestore nem na obra**.
+
+Fluxo recomendado:
+1. Cadastre a obra com o e-mail do cliente.
+2. Copie o acesso gerado pelo aplicativo.
+3. Abra **Firebase > Authentication > Usuários > Adicionar usuário**.
+4. Crie o usuário usando exatamente o mesmo e-mail e a senha inicial gerada.
+5. Envie o acesso ao cliente.
+6. O cliente pode trocar a senha depois usando **Esqueci minha senha**.

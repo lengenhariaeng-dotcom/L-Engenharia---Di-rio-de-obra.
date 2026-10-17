@@ -22,3 +22,6 @@ label{display:block;font-size:13px;font-weight:800;color:#394150}label+label{mar
 @media(max-width:430px){.dashboard-summary{grid-template-columns:1fr}.project-add-card{min-height:180px}}
 
 .auth-link{display:block;margin:14px auto 0;border:0;background:transparent;color:var(--muted);font-weight:700;cursor:pointer;text-decoration:underline}.auth-help{text-align:center;color:var(--muted);font-size:.88rem;margin:12px 0 0}.segmented.single{grid-template-columns:1fr}
+
+.password-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin-top:7px}.password-row input{margin-top:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.04em}.btn.compact{min-height:44px;padding:0 14px}.access-modal{width:min(620px,calc(100% - 28px))}.credential-box{display:grid;gap:14px;background:#f7f8fa;border:1px solid var(--line);border-radius:15px;padding:16px;margin-top:16px}.credential-box label+label{margin-top:0}.credential-box input{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#fff}.access-helper{margin-top:-4px}.access-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+@media(max-width:620px){.password-row{grid-template-columns:1fr}.password-row .btn{width:100%}.access-actions{flex-direction:column}.access-actions .btn{width:100%}}
